@@ -1,4 +1,4 @@
-# AI Job Matcher
+# Personal AI Job Matcher
 
 An intelligent job matching system powered by **local AI** (Ollama) that analyzes your resume and finds the most relevant job opportunities for you.
 
