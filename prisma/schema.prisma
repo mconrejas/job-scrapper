@@ -1,0 +1,94 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  resumes       Resume[]
+  jobMatches    JobMatch[]
+
+  @@map("users")
+}
+
+model Resume {
+  id          String   @id @default(cuid())
+  userId      String
+  fileName    String
+  fileUrl     String
+  fileType    String // pdf, docx
+  rawText     String   @db.Text
+  parsedData  Json // Structured resume data
+  skills      String[] // Extracted skills
+  experience  Json // Work experience
+  education   Json // Education history
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("resumes")
+}
+
+model Job {
+  id                String   @id @default(cuid())
+  title             String
+  company           String
+  location          String
+  description       String   @db.Text
+  requirements      String   @db.Text
+  salary            String?
+  platform          String // linkedin, indeed, jobstreet
+  externalId        String // ID from the source platform
+  externalUrl       String
+  postedDate        DateTime?
+  scrapedAt         DateTime @default(now())
+  lastUpdated       DateTime @updatedAt
+  isActive          Boolean  @default(true)
+  skills            String[] // Required skills
+  rawData           Json // Original scraped data
+
+  matches           JobMatch[]
+
+  @@unique([platform, externalId])
+  @@index([platform, scrapedAt])
+  @@index([company])
+  @@index([location])
+  @@map("jobs")
+}
+
+model JobMatch {
+  id                  String   @id @default(cuid())
+  userId              String
+  jobId               String
+  overallScore        Float // 0-100
+  skillMatchScore     Float
+  experienceScore     Float
+  locationScore       Float
+  topApplicantScore   Float? // Predicted likelihood of being a top applicant
+  matchReason         String   @db.Text // AI-generated explanation
+  matchDetails        Json // Detailed breakdown of match
+  viewed              Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@index([userId, overallScore])
+  @@index([userId, viewed])
+  @@map("job_matches")
+}
